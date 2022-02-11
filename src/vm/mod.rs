@@ -22,7 +22,7 @@ impl<'c, 'm> VM<'c, 'm> {
         match opcode {
             Opcodes::BR => self.cpu.br(instruction),
             Opcodes::ADD => self.cpu.add(instruction),
-            Opcodes::LD => todo!(),
+            Opcodes::LD => self.cpu.ld(instruction),
             Opcodes::ST => todo!(),
             Opcodes::JSR => todo!(),
             Opcodes::AND => self.cpu.and(instruction),
@@ -32,7 +32,7 @@ impl<'c, 'm> VM<'c, 'm> {
             Opcodes::NOT => todo!(),
             Opcodes::LDI => todo!(),
             Opcodes::STI => todo!(),
-            Opcodes::JMP => todo!(),
+            Opcodes::JMP => self.cpu.jmp(instruction),
             Opcodes::RES => todo!(),
             Opcodes::LEA => todo!(),
             Opcodes::TRAP => todo!(),

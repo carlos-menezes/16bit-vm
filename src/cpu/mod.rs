@@ -84,9 +84,21 @@ impl CPU {
 
     pub fn br(&mut self, instruction: u16) {
         let cond_flag = (instruction >> 0x09) & 0x7;
-        let pc_offset = Self::sext(instruction >> 0x1FF, 9);
+        let pc_offset = Self::sext(instruction & 0x1FF, 9);
         if (self.cond & cond_flag) == 1 {
             self.pc += pc_offset;
         }
+    }
+
+    pub fn jmp(&mut self, instruction: u16) {
+        let baser = (instruction >> 6) & 0x7;
+        self.pc = self.get_gpr(baser);
+    }
+
+    pub fn ld(&mut self, instruction: u16) {
+        let dr = (instruction >> 9) & 0x7;
+        let pc_offset = Self::sext(instruction & 0x1FF, 9);
+        self.cpu.set_gpr(dr, self.pc + pc_offset);
+        self.set_cc(self.get_gpr(dr));
     }
 }
