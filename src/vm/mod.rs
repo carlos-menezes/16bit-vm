@@ -20,12 +20,12 @@ impl<'c, 'm> VM<'c, 'm> {
         let opcode: Opcodes = (instruction >> 12).into();
 
         match opcode {
-            Opcodes::BR => todo!(),
-            Opcodes::ADD => todo!(),
+            Opcodes::BR => self.cpu.br(instruction),
+            Opcodes::ADD => self.cpu.add(instruction),
             Opcodes::LD => todo!(),
             Opcodes::ST => todo!(),
             Opcodes::JSR => todo!(),
-            Opcodes::AND => todo!(),
+            Opcodes::AND => self.cpu.and(instruction),
             Opcodes::LDR => todo!(),
             Opcodes::STR => todo!(),
             Opcodes::RTI => todo!(),
