@@ -1,12 +1,14 @@
+use crate::memory::Memory;
+
 pub mod opcodes;
 
+#[derive(Copy, Clone)]
 #[repr(u16)]
-#[derive(Copy)]
 pub enum CondFlags {
     Uninitialized = 0,
-    Pos = (1 << 0),
-    Zro = 1 << 1,
-    Neg = 1 << 2,
+    Pos = 1,
+    Zro = 2,
+    Neg = 4,
 }
 
 pub struct CPU {
@@ -53,8 +55,8 @@ impl CPU {
     }
 
     pub fn add(&mut self, instruction: u16) {
-        let dr = (instruction >> 0x9) & 0x7;
-        let sr1 = (instruction >> 0x6) & 0x7;
+        let dr = (instruction >> 9) & 0x7;
+        let sr1 = (instruction >> 6) & 0x7;
         let immediate_mode = ((instruction >> 5) & 0x1) == 1;
         if immediate_mode {
             // instruction[5] is 1
@@ -68,8 +70,8 @@ impl CPU {
     }
 
     pub fn and(&mut self, instruction: u16) {
-        let dr = (instruction >> 0x9) & 0x7;
-        let sr1 = (instruction >> 0x6) & 0x7;
+        let dr = (instruction >> 9) & 0x7;
+        let sr1 = (instruction >> 6) & 0x7;
         let immediate_mode = ((instruction >> 5) & 0x1) == 1;
         if immediate_mode {
             // instruction[5] is 1
@@ -83,22 +85,84 @@ impl CPU {
     }
 
     pub fn br(&mut self, instruction: u16) {
-        let cond_flag = (instruction >> 0x09) & 0x7;
+        let cond_flag = (instruction >> 9) & 0x7;
         let pc_offset = Self::sext(instruction & 0x1FF, 9);
-        if (self.cond & cond_flag) == 1 {
+        if (self.cond as u16 & cond_flag) == 1 {
             self.pc += pc_offset;
         }
     }
 
     pub fn jmp(&mut self, instruction: u16) {
-        let baser = (instruction >> 6) & 0x7;
-        self.pc = self.get_gpr(baser);
+        let base_r = (instruction >> 6) & 0x7;
+        self.pc = self.get_gpr(base_r);
     }
 
     pub fn ld(&mut self, instruction: u16) {
         let dr = (instruction >> 9) & 0x7;
         let pc_offset = Self::sext(instruction & 0x1FF, 9);
-        self.cpu.set_gpr(dr, self.pc + pc_offset);
+        self.set_gpr(dr, self.pc + pc_offset);
         self.set_cc(self.get_gpr(dr));
+    }
+
+    pub fn jsr(&mut self, instruction: u16) {
+        let flag = (instruction >> 11) & 0x1;
+        self.set_gpr(7, self.pc);
+        if flag == 0 {
+            // JSRR
+            let base_r = (instruction >> 6) & 0x7;
+            self.pc = self.get_gpr(base_r);
+        } else {
+            // JSR
+            let pc_offset = Self::sext(instruction & 0x7FF, 11);
+            self.pc += pc_offset;
+        }
+    }
+
+    pub fn ldi(&mut self, instruction: u16) {
+        let dr = (instruction >> 9) & 0x7;
+        let pc_offset = Self::sext(instruction & 0x1FF, 9);
+        self.set_gpr(dr, self.get_gpr(self.get_gpr(self.pc + pc_offset)));
+        self.set_cc(self.get_gpr(dr));
+    }
+
+    pub fn ldr(&mut self, instruction: u16) {
+        let dr = (instruction >> 9) & 0x7;
+        let base_r = (instruction >> 6) & 0x7;
+        let offset = Self::sext(instruction & 0x3F, 6);
+        self.set_gpr(dr, self.get_gpr(base_r) + offset);
+        self.set_cc(self.get_gpr(dr));
+    }
+
+    pub fn lea(&mut self, instruction: u16) {
+        let dr = (instruction >> 9) & 0x7;
+        let pc_offset = Self::sext(instruction & 0x1FF, 9);
+        self.set_gpr(dr, self.pc + pc_offset);
+        self.set_cc(self.get_gpr(dr));
+    }
+
+    pub fn not(&mut self, instruction: u16) {
+        let dr = (instruction >> 9) & 0x7;
+        let sr = (instruction >> 6) & 0x7;
+        self.set_gpr(dr, !self.get_gpr(sr));
+        self.set_cc(self.get_gpr(dr));
+    }
+
+    pub fn st(&mut self, instruction: u16, memory: &mut Memory) {
+        let sr = (instruction >> 9) & 0x7;
+        let pc_offset = Self::sext(instruction & 0x1FF, 9);
+        memory.write(self.pc + pc_offset, self.get_gpr(sr));
+    }
+
+    pub fn sti(&mut self, instruction: u16, memory: &mut Memory) {
+        let sr = (instruction >> 9) & 0x7;
+        let pc_offset = Self::sext(instruction & 0x1FF, 9);
+        memory.write(memory.read(self.pc + pc_offset), self.get_gpr(sr));
+    }
+
+    pub fn str(&mut self, instruction: u16, memory: &mut Memory) {
+        let sr = (instruction >> 9) & 0x7;
+        let base_r = (instruction >> 6) & 0x7;
+        let offset = Self::sext(instruction & 0x3F, 9);
+        memory.write(self.get_gpr(base_r) + offset, self.get_gpr(sr));
     }
 }

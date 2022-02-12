@@ -8,14 +8,15 @@ pub enum Opcodes {
     AND,
     LDR,
     STR,
-    RTI,
     NOT,
     LDI,
     STI,
     JMP,
-    RES,
     LEA,
     TRAP,
+    // Unused
+    // RES,
+    // RTI,
 }
 
 impl From<u16> for Opcodes {
@@ -31,12 +32,10 @@ impl From<u16> for Opcodes {
             0x0110 => Self::LDR,
             0x1110 => Self::LEA,
             0x1001 => Self::NOT,
-            0x1000 => Self::RTI,
             0x0011 => Self::ST,
             0x1011 => Self::STI,
             0x0111 => Self::STR,
             0x1111 => Self::TRAP,
-            0x1101 => Self::RES,
             _ => panic!("invalid opcode"),
         }
     }
